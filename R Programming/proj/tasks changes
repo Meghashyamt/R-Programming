@@ -1,0 +1,207 @@
+From Roger Cue
+ 
+
+Ms Sresti,
+ 
+
+You are making progress. I include my take on your code and some suggestions
+Of things to look at.
+ 
+
+I also attach a PDF of a common issue/problem that needs to be addressed for any merge:
+ 
+
+ 
+
+library("dplyr")
+library("lubridate") # load the package
+ 
+
+options(max.print=9999999)
+#path of the file
+# FilePath<-"/Users/archana/Desktop/"
+ 
+
+#Name of the file
+FileName<-"animals4.csv"
+ 
+
+filen<-paste(FilePath,FileName,sep="")
+filen
+#import the data
+animals<-read.csv(filen)
+head(animals)
+ 
+
+#install.packages("lubridate")# To install the package
+#any(grepl("lubridate", installed.packages()))# to check it whether it is installed
+ 
+
+# OK, but also see how to do this using the basic as.Date function
+#
+animals$BIRTH_DATE<-dmy(animals$BIRTH_DATE)
+head(animals)
+str(animals)
+ 
+
+# lubridate dmy OK
+ 
+
+animals$ENTER_HERD_DATE<-dmy(animals$ENTER_HERD_DATE)
+animals
+animals$LEFT_HERD_DATE<- dmy(animals$LEFT_HERD_DATE)
+animals
+ 
+
+#name of the file
+FileName<-"lactations3.csv"
+ 
+
+filen<-paste(FilePath,FileName,sep="")
+filen
+# import the data
+lac<-read.csv(filen)
+lac
+library("lubridate")
+lac$END_DATE<-dmy(lac$END_DATE)
+lac
+lac$START_DATE<-dmy(lac$START_DATE)
+lac
+lac$SERVICE_DATE<-dmy(lac$SERVICE_DATE) # this is not OK,
+# service date not on lactations
+lac
+options(max.print=9999999)
+####TASK 1 merging columns animals and lactations 
+ 
+
+# to merge the data common variables
+anlac<-merge(animals,lac,by=c("CowId","herd"))
+head(anlac)
+ 
+
+# to view the data
+View(x = anlac,title ="my merge of animal and lac data")
+ 
+
+options(max.print=9999999)
+###TASK 2 Selecting lactation 1
+ 
+
+# this is destructive; you have removed the original (merged) data
+# you have deletd the other lactations, what if I now ask you
+# to also obtain the same thing for lactation 2?
+# I would not overwrie anlac, rather I woulw make an anlac1, EG
+#
+anlac1<-anlac[which(anlac$LACT_NO==1),]
+ 
+
+ 
+
+anlac<-anlac[which(anlac$LACT_NO==1),]
+View(x= anlac, title="my first lactation data")
+ 
+
+#Breedings data
+FileName<-"breedings3.csv"
+filen<-paste(FilePath,FileName,sep="")
+filen
+breed<-read.csv(filen)
+breed
+breed$SERVICE_DATE<-dmy(breed$SERVICE_DATE)
+breed
+###TASK 3 Merge 1st lactation with breed , by cow-herd
+ 
+
+anlacbreed<-merge(anlac,breed,by=c("CowId","herd"))
+View(x = anlacbreed , title = "My Merge 1st lac and breed data")
+ 
+
+###TASK 4 Order by cowdid, herd, service date
+ 
+
+# I would just order by names. Depending upon the specify column
+# orfder is not a good idea. Make use foo the variable names
+# so that the specify columns do not matter
+#
+anlacbreedorder=anlacbreed[order(anlacbreed$CowId,anlacbreed$herd,anlacbreed$LACT_NO),]
+ 
+
+#
+anlacbreedcor<-anlacbreed[,c(1,2,18,9,8,3:7,10:17)]
+anlacbreedcor
+head(anlacbreedcor)
+anlacbreedorder=anlacbreedcor[order(anlacbreedcor[,1],anlacbreedcor[,2],anlacbreedcor[,3]),]
+anlacbreedorder
+head(anlacbreedorder)
+ 
+
+###TASK 5 Select the service date , range between start and end laction date
+ 
+
+# learn this approach too
+IMPdata<-anlacbreedorder[anlacbreedorder$SERVICE_DATE>=anlacbreedorder$START_DATE & anlacbreedorder$SERVICE_DATE<=anlacbreedorder$END_DATE,]
+ 
+
+ 
+
+IMPdata<-anlacbreedorder[which(anlacbreedorder$SERVICE_DATE>=anlacbreedorder$START_DATE & anlacbreedorder$SERVICE_DATE<=anlacbreedorder$END_DATE),]
+View(x = IMPdata , title = "My selected lac range date")
+print(IMPdata)
+ 
+
+### TASK 6 DiM days , service date - lactation start date
+ 
+
+IMPdata$Dim<-IMPdata$SERVICE_DATE-IMPdata$START_DATE
+View(x = IMPdata , title = "My selected lac range date")
+############
+#TASK 7 Plot the histograms for Dim
+IMPdata$Dim=as.numeric(IMPdata$Dim)
+head(IMPdata$Dim)
+hist(IMPdata$Dim)
+str(IMPdata)
+ 
+
+#TASK 8 Plot for each cow
+ 
+
+# Library
+#library(tidyverse)
+###############
+#TASK 9 Plot for each herd
+ 
+
+ 
+
+#TASK 10 Plot with days in milk and each breed with stick and circle
+ 
+
+# we are not looking at different breeds, the cows are all Holstein
+# you should not need to create d, e nor data, use IMPdata directly
+#
+d<-IMPdata[,c(1,19)]
+d
+e<-as.numeric(d$Dim)
+e
+# Create data
+data <- data.frame(
+  Dim=d$Dim,
+y=d$CowId
+)
+head(data)
+table(data$Dim)
+ 
+
+ 
+
+head(data)
+ 
+
+library(ggplot2)
+# plot
+ 
+
+# lollipop chart
+ggplot(data, aes(Dim,y)) +
+geom_segment(aes(x = Dim, y = 0, xend = Dim, yend = y), color = "grey50") +
+geom_point()+xlab("Days in Milk") +ylab("CowId")
